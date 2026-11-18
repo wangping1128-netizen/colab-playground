@@ -1,0 +1,154 @@
+api = 1
+id = "comfyui-video"
+version = "0.1.0"
+# Optional: passed as PLUGIN_HF_TOKEN when saved on the Plugins page (needed only for gated repos such as LTX-2.5).
+needs = ["hf_token"]
+
+[name]
+en = "ComfyUI Video Studio (Wan / Hunyuan / LTX)"
+zh-CN = "ComfyUI 视频工作台（万相 / 混元 / LTX）"
+zh-TW = "ComfyUI 影片工作台（萬相 / 混元 / LTX）"
+
+[description]
+en = "Deploy ComfyUI on a Colab GPU with built-in video workflow templates, ComfyUI-Manager, GGUF loader, and ready-to-run model packs for Wan 2.2, HunyuanVideo 1.5, and LTX-2.3 audio-video generation."
+zh-CN = "在 Colab GPU 上一键部署 ComfyUI 视频生成工作台（内置官方视频模板、Manager 与 GGUF 节点），支持预装通义万相 Wan 2.2、腾讯混元 HunyuanVideo 1.5、LTX-2.3 音画同步模型。"
+zh-TW = "在 Colab GPU 上一鍵部署 ComfyUI 影片生成工作台（內建官方影片範本、Manager 與 GGUF 節點），支援預裝通義萬相 Wan 2.2、騰訊混元 HunyuanVideo 1.5、LTX-2.3 音畫同步模型。"
+
+[provision]
+accelerator = "A100"
+min_vram_mib = 0
+high_mem = false
+
+[[inputs]]
+id = "preset"
+type = "select"
+options = [
+  "wan2.2-ti2v-5b",
+  "wan2.2-i2v-14b-fp8",
+  "wan2.2-t2v-14b-fp8",
+  "hunyuan1.5-720p-t2v",
+  "hunyuan1.5-720p-i2v",
+  "ltx2.3-22b-distilled-fp8",
+  "ltx2.3-22b-dev-fp8",
+  "none",
+]
+default = "wan2.2-ti2v-5b"
+[inputs.label]
+en = "Preloaded video model pack"
+zh-CN = "预装视频模型包"
+zh-TW = "預裝影片模型包"
+[inputs.help]
+en = "wan2.2-ti2v-5b (~17 GB, T2V+I2V, fits L4/T4/A100) is the fastest starter. 14B/22B packs (~20-51 GB) shine on A100 (or L4 with FP8). Re-run on the same session to add another pack."
+zh-CN = "wan2.2-ti2v-5b（约 17 GB，文/图生视频合一，L4/T4/A100 均可跑）最省算力；14B/22B 旗舰包建议选 A100（L4 也可跑 FP8）。想在同一台机器追加第二个模型包，可在下方「运行位置」选已有会话再次运行。"
+zh-TW = "wan2.2-ti2v-5b（約 17 GB，文/圖生影片合一，L4/T4/A100 皆可跑）最省算力；14B/22B 旗艦包建議選 A100（L4 也可跑 FP8）。想在同一台機器追加第二個模型包，可在下方「執行位置」選既有工作階段再次執行。"
+
+[[inputs]]
+id = "extra_downloads"
+type = "text"
+[inputs.label]
+en = "Extra Hugging Face files (optional)"
+zh-CN = "额外下载 Hugging Face 模型文件（可选）"
+zh-TW = "額外下載 Hugging Face 模型檔案（選填）"
+[inputs.help]
+en = "Semicolon-separated entries in the form owner/repo:path/in/repo->models_subdir (e.g. Comfy-Org/Wan-Animate-2:split_files/diffusion_models/file.safetensors->diffusion_models)."
+zh-CN = "按需追加任意 HF 权重（如 LTX-2.5、Wan-Animate、LoRA 或 GGUF），格式：owner/repo:仓库内路径->models子目录，多条用分号 ; 分隔。"
+zh-TW = "按需追加任意 HF 權重（如 LTX-2.5、Wan-Animate、LoRA 或 GGUF），格式：owner/repo:儲存庫內路徑->models子目錄，多筆用分號 ; 分隔。"
+
+[[inputs]]
+id = "install_nodes"
+type = "bool"
+default = true
+[inputs.label]
+en = "Install ComfyUI-Manager, ComfyUI-GGUF & VideoHelperSuite"
+zh-CN = "安装 ComfyUI-Manager、GGUF 与 VideoHelperSuite 节点"
+zh-TW = "安裝 ComfyUI-Manager、GGUF 與 VideoHelperSuite 節點"
+[inputs.help]
+en = "Adds Manager (install any custom node from UI), ComfyUI-GGUF (.gguf diffusion weights), and VideoHelperSuite."
+zh-CN = "安装插件管理器、GGUF 扩散模型加载节点和常用视频合成节点。"
+zh-TW = "安裝外掛管理器、GGUF 擴散模型載入節點與常用影片合成節點。"
+
+[[inputs]]
+id = "vram_mode"
+type = "select"
+options = ["auto", "highvram", "normalvram", "lowvram"]
+default = "auto"
+[inputs.label]
+en = "VRAM management mode"
+zh-CN = "显存调度模式"
+zh-TW = "顯示記憶體調度模式"
+[inputs.help]
+en = "auto picks highvram on 80 GB GPUs, normalvram on 24-48 GB GPUs, and lowvram under 20 GB."
+zh-CN = "auto 会按分配到的显存自动匹配（80 GB 用 highvram，24-48 GB 用 normalvram，低于 20 GB 用 lowvram）。"
+zh-TW = "auto 會依分配到的顯示記憶體自動匹配（80 GB 用 highvram，24-48 GB 用 normalvram，低於 20 GB 用 lowvram）。"
+
+[[inputs]]
+id = "port"
+type = "number"
+default = 8188
+min = 1024
+max = 65535
+[inputs.label]
+en = "Server port on the VM"
+zh-CN = "VM 上的服务端口"
+zh-TW = "VM 上的服務連接埠"
+[inputs.help]
+en = "Default is 8188 (port 8080 is reserved by Colab)."
+zh-CN = "默认 8188（8080 为 Colab 保留端口不可用）。"
+zh-TW = "預設 8188（8080 為 Colab 保留連接埠不可用）。"
+
+[[inputs]]
+id = "extra_args"
+type = "text"
+[inputs.label]
+en = "Extra ComfyUI arguments (optional)"
+zh-CN = "额外的 ComfyUI 启动参数（可选）"
+zh-TW = "額外的 ComfyUI 啟動參數（選填）"
+
+[run]
+script = "worker.py"
+
+[[stages]]
+id = "detect"
+[stages.label]
+en = "Check GPU and disk"
+zh-CN = "检查 GPU 与磁盘空间"
+zh-TW = "檢查 GPU 與磁碟空間"
+
+[[stages]]
+id = "install"
+[stages.label]
+en = "Install ComfyUI and video nodes"
+zh-CN = "部署 ComfyUI 与视频节点"
+zh-TW = "部署 ComfyUI 與影片節點"
+
+[[stages]]
+id = "download"
+[stages.label]
+en = "Download video model weights"
+zh-CN = "下载视频模型权重"
+zh-TW = "下載影片模型權重"
+
+[[stages]]
+id = "server"
+[stages.label]
+en = "Start ComfyUI server"
+zh-CN = "启动 ComfyUI 服务"
+zh-TW = "啟動 ComfyUI 服務"
+
+[[endpoints]]
+id = "ui"
+port_input = "port"
+path = "/"
+health = "/system_stats"
+kind = "http"
+[endpoints.label]
+en = "ComfyUI Web Studio"
+zh-CN = "ComfyUI 网页工作台"
+zh-TW = "ComfyUI 網頁工作台"
+
+[[keep]]
+path = "/content/ComfyUI/output"
+[keep.label]
+en = "Generated videos and images"
+zh-CN = "生成的视频与图片"
+zh-TW = "產生的影片與圖片"
