@@ -32,7 +32,11 @@ fn comfyui_video_plugin_installs_and_resolves() {
         Some(&data.join("plugins.json")),
     )
     .unwrap();
-    assert!(reloaded.load_errors.is_empty(), "{:?}", reloaded.load_errors);
+    assert!(
+        reloaded.load_errors.is_empty(),
+        "{:?}",
+        reloaded.load_errors
+    );
     let loaded = reloaded.get("comfyui-video").unwrap();
     let inputs = resolve_inputs(&loaded.manifest, &BTreeMap::new()).unwrap();
     let eps = resolve_endpoints(&loaded.manifest, &inputs.values).unwrap();

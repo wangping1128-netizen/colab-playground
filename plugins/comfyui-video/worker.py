@@ -211,6 +211,7 @@ def clean_env(include_hf_token=False):
         env["LD_LIBRARY_PATH"] = ":".join(ld_parts)
     env["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
     env["PYTHONUNBUFFERED"] = "1"
+    env["GIT_TERMINAL_PROMPT"] = "0"
     if include_hf_token and HF_TOKEN:
         env["HF_TOKEN"] = HF_TOKEN
     return env
@@ -354,67 +355,67 @@ def ensure_model_dirs():
 
 def install_comfyui():
     os.makedirs("/content", exist_ok=True)
-    with open(INSTALL_LOG, "a", encoding="utf-8") as log:
-        status("running", "install", "preparing huggingface_hub[hf_xet]", progress=0.1)
-        run_logged(
-            [sys.executable, "-m", "pip", "install", "-q", "-U", "huggingface_hub[hf_xet]"],
-            log,
-        )
+    try:
+        with open(INSTALL_LOG, "a", encoding="utf-8") as log:
+            status("running", "install", "preparing huggingface_hub[hf_xet]", progress=0.1)
+            run_logged(
+                [sys.executable, "-m", "pip", "install", "-q", "-U", "huggingface_hub[hf_xet]"],
+                log,
+            )
 
-        if os.path.isfile(os.path.join(COMFY_DIR, "main.py")) and os.path.isfile(INSTALL_STAMP):
+            if os.path.isfile(os.path.join(COMFY_DIR, "main.py")) and os.path.isfile(INSTALL_STAMP):
+                ensure_model_dirs()
+                if INSTALL_NODES:
+                    install_custom_nodes(log)
+                status("running", "install", "reusing existing ComfyUI installation", progress=1.0)
+                return
+
+            if not os.path.isfile(os.path.join(COMFY_DIR, "main.py")):
+                status("running", "install", "cloning ComfyUI", progress=0.25)
+                shutil.rmtree(COMFY_DIR, ignore_errors=True)
+                run_logged(
+                    [
+                        "git",
+                        "clone",
+                        "--depth",
+                        "1",
+                        "https://github.com/Comfy-Org/ComfyUI.git",
+                        COMFY_DIR,
+                    ],
+                    log,
+                )
+
             ensure_model_dirs()
-            if INSTALL_NODES:
-                install_custom_nodes(log)
-            status("running", "install", "reusing existing ComfyUI installation", progress=1.0)
-            return
 
-        if not os.path.isfile(os.path.join(COMFY_DIR, "main.py")):
-            status("running", "install", "cloning ComfyUI", progress=0.25)
-            shutil.rmtree(COMFY_DIR, ignore_errors=True)
+            status("running", "install", "installing ComfyUI dependencies", progress=0.55)
+            run_logged(
+                [sys.executable, "-m", "pip", "install", "-q", "-r", os.path.join(COMFY_DIR, "requirements.txt")],
+                log,
+            )
             run_logged(
                 [
-                    "git",
-                    "-c",
-                    "GIT_TERMINAL_PROMPT=0",
-                    "clone",
-                    "--depth",
-                    "1",
-                    "https://github.com/comfyanonymous/ComfyUI.git",
-                    COMFY_DIR,
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "-q",
+                    "gguf",
+                    "imageio-ffmpeg",
+                    "opencv-python-headless",
                 ],
                 log,
             )
 
-        ensure_model_dirs()
+            if INSTALL_NODES:
+                install_custom_nodes(log)
 
-        status("running", "install", "installing ComfyUI dependencies & latest video templates", progress=0.55)
-        run_logged(
-            [sys.executable, "-m", "pip", "install", "-q", "-r", os.path.join(COMFY_DIR, "requirements.txt")],
-            log,
-        )
-        run_logged(
-            [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "-q",
-                "-U",
-                "comfyui-frontend-package",
-                "comfyui-workflow-templates",
-                "gguf",
-                "imageio-ffmpeg",
-                "opencv-python-headless",
-            ],
-            log,
-        )
-
-        if INSTALL_NODES:
-            install_custom_nodes(log)
-
-        with open(INSTALL_STAMP, "w", encoding="utf-8") as fh:
-            fh.write("ok\n")
-        status("running", "install", "ComfyUI environment ready", progress=1.0)
+            with open(INSTALL_STAMP, "w", encoding="utf-8") as fh:
+                fh.write("ok\n")
+            status("running", "install", "ComfyUI environment ready", progress=1.0)
+    except subprocess.CalledProcessError as exc:
+        cmd_name = os.path.basename(exc.cmd[0]) if getattr(exc, "cmd", None) else "command"
+        detail = log_tail(INSTALL_LOG, n=12) or str(exc)
+        fail("ComfyUI installation failed (%s, exit %s): %s" % (cmd_name, exc.returncode, detail))
 
 
 def install_custom_nodes(log):
@@ -422,8 +423,9 @@ def install_custom_nodes(log):
     os.makedirs(nodes_root, exist_ok=True)
     for idx, (name, url, install_reqs) in enumerate(CUSTOM_NODES, start=1):
         dest = os.path.join(nodes_root, name)
-        if os.path.isdir(dest):
+        if os.path.isdir(dest) and os.listdir(dest):
             continue
+        shutil.rmtree(dest, ignore_errors=True)
         status(
             "running",
             "install",
@@ -431,12 +433,14 @@ def install_custom_nodes(log):
             progress=0.75 + 0.07 * idx,
         )
         res = run_logged(
-            ["git", "-c", "GIT_TERMINAL_PROMPT=0", "clone", "--depth", "1", url, dest],
+            ["git", "clone", "--depth", "1", url, dest],
             log,
             check=False,
         )
         if res.returncode != 0:
-            print("warning: failed to clone %s, continuing" % name, flush=True)
+            shutil.rmtree(dest, ignore_errors=True)
+            log.flush()
+            print("warning: failed to clone %s: %s" % (name, log_tail(INSTALL_LOG, n=3)), flush=True)
             continue
         req_file = os.path.join(dest, "requirements.txt")
         if install_reqs and os.path.isfile(req_file):
@@ -587,8 +591,10 @@ def download_models(plan):
                     env=clean_env(include_hf_token=True),
                     check=True,
                 )
-            except subprocess.CalledProcessError:
-                fail("failed downloading %s from %s (see download.log in run directory)" % (fname, repo))
+            except subprocess.CalledProcessError as exc:
+                log.flush()
+                detail = log_tail(DOWNLOAD_LOG, n=12) or str(exc)
+                fail("failed downloading %s from %s: %s" % (fname, repo, detail))
             finally:
                 done_file.set()
 
@@ -648,15 +654,16 @@ def start_server(vram_flag):
         cmd += shlex.split(EXTRA_ARGS)
     with open(os.path.join(RUN_DIR, "server.cmd"), "w", encoding="utf-8") as fh:
         fh.write(redact(shlex.join(cmd)) + "\n")
-    proc = subprocess.Popen(
-        cmd,
-        cwd=COMFY_DIR,
-        env=clean_env(include_hf_token=False),
-        stdout=open(SERVER_LOG, "w", encoding="utf-8"),
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.DEVNULL,
-        start_new_session=True,
-    )
+    with open(SERVER_LOG, "w", encoding="utf-8") as srv_log:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=COMFY_DIR,
+            env=clean_env(include_hf_token=False),
+            stdout=srv_log,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
+        )
     _server[0] = proc
     return proc
 
@@ -732,6 +739,27 @@ def self_test():
     assert choose_vram_flag("auto", 40960) == "--normalvram"
     assert choose_vram_flag("auto", 15360) == "--lowvram"
     assert choose_vram_flag("auto", 0) == "--cpu"
+    env = clean_env()
+    assert env.get("GIT_TERMINAL_PROMPT") == "0"
+    assert "PLUGIN_ID" not in env
+    if shutil.which("git"):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "src")
+            dst = os.path.join(tmp, "dst")
+            os.makedirs(src)
+            subprocess.run(["git", "init", "-q", src], env=env, check=True)
+            with open(os.path.join(src, "README.md"), "w", encoding="utf-8") as fh:
+                fh.write("ok\n")
+            subprocess.run(["git", "-C", src, "add", "README.md"], env=env, check=True)
+            subprocess.run(
+                ["git", "-C", src, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "init"],
+                env=env,
+                check=True,
+            )
+            subprocess.run(["git", "clone", "--depth", "1", "-q", "file://" + src, dst], env=env, check=True)
+            assert os.path.isfile(os.path.join(dst, "README.md"))
     print("self-test ok (%d presets verified)" % len(PRESETS))
     return 0
 
