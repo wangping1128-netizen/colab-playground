@@ -38,6 +38,12 @@ fn comfyui_video_plugin_installs_and_resolves() {
         reloaded.load_errors
     );
     let loaded = reloaded.get("comfyui-video").unwrap();
+    assert_eq!(loaded.manifest.version, "0.1.2");
+    let launch_len = colab_playground_core::vm::plugin_launch_snippet(&loaded.script).len();
+    assert!(
+        launch_len < 16_000,
+        "plugin_launch_snippet too large ({launch_len} bytes) for local proxy WebSocket frames"
+    );
     let inputs = resolve_inputs(&loaded.manifest, &BTreeMap::new()).unwrap();
     let eps = resolve_endpoints(&loaded.manifest, &inputs.values).unwrap();
     assert_eq!(eps.len(), 1);
