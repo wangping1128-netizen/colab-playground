@@ -1,6 +1,6 @@
 api = 1
 id = "comfyui-video"
-version = "0.1.4"
+version = "0.1.5"
 # Optional: passed as PLUGIN_HF_TOKEN when saved on the Plugins page (needed only for gated repos such as LTX-2.5).
 needs = ["hf_token"]
 
@@ -57,6 +57,18 @@ zh-TW = "額外下載 Hugging Face 模型檔案（選填）"
 en = "Semicolon-separated entries in the form owner/repo:path/in/repo->models_subdir (e.g. Comfy-Org/Wan-Animate-2:split_files/diffusion_models/file.safetensors->diffusion_models)."
 zh-CN = "按需追加任意 HF 权重（如 LTX-2.5、Wan-Animate、LoRA 或 GGUF），格式：owner/repo:仓库内路径->models子目录，多条用分号 ; 分隔。"
 zh-TW = "按需追加任意 HF 權重（如 LTX-2.5、Wan-Animate、LoRA 或 GGUF），格式：owner/repo:儲存庫內路徑->models子目錄，多筆用分號 ; 分隔。"
+
+[[inputs]]
+id = "extra_nodes"
+type = "text"
+[inputs.label]
+en = "Extra custom nodes (optional)"
+zh-CN = "额外安装的第三方节点（可选）"
+zh-TW = "額外安裝的第三方節點（可選）"
+[inputs.help]
+en = "Semicolon-separated GitHub repos (owner/repo[@ref]) or Comfy Registry IDs (pkg[@ver]), e.g. kijai/ComfyUI-KJNodes; rgthree-comfy."
+zh-CN = "开机自动预装的第三方插件，分号 ; 分隔：支持 GitHub 仓库（owner/repo 或 owner/repo@commit）与 Comfy Registry 包名（如 kijai/ComfyUI-KJNodes; rgthree-comfy）。可直接粘贴同步助手生成的配方。"
+zh-TW = "開機自動預裝的第三方外掛，分號 ; 分隔：支援 GitHub 儲存庫（owner/repo 或 owner/repo@commit）與 Comfy Registry 套件名（如 kijai/ComfyUI-KJNodes; rgthree-comfy）。可直接貼上同步助手產生的配方。"
 
 [[inputs]]
 id = "install_nodes"
