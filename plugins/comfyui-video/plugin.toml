@@ -1,18 +1,18 @@
 api = 1
 id = "comfyui-video"
-version = "0.1.3"
+version = "0.1.4"
 # Optional: passed as PLUGIN_HF_TOKEN when saved on the Plugins page (needed only for gated repos such as LTX-2.5).
 needs = ["hf_token"]
 
 [name]
-en = "ComfyUI Video Studio (Wan / Hunyuan / LTX)"
-zh-CN = "ComfyUI 视频工作台（万相 / 混元 / LTX）"
-zh-TW = "ComfyUI 影片工作台（萬相 / 混元 / LTX）"
+en = "ComfyUI Video Studio (MiniMax H3 / LTX-2.5 / Wan / Hunyuan)"
+zh-CN = "ComfyUI 视频工作台（MiniMax H3 / LTX-2.5 / 万相 / 混元）"
+zh-TW = "ComfyUI 影片工作台（MiniMax H3 / LTX-2.5 / 萬相 / 混元）"
 
 [description]
-en = "Deploy ComfyUI on a Colab GPU with built-in video workflow templates, ComfyUI-Manager, GGUF loader, and ready-to-run model packs for Wan 2.2, HunyuanVideo 1.5, and LTX-2.3 audio-video generation."
-zh-CN = "在 Colab GPU 上一键部署 ComfyUI 视频生成工作台（内置官方视频模板、Manager 与 GGUF 节点），支持预装通义万相 Wan 2.2、腾讯混元 HunyuanVideo 1.5、LTX-2.3 音画同步模型。"
-zh-TW = "在 Colab GPU 上一鍵部署 ComfyUI 影片生成工作台（內建官方影片範本、Manager 與 GGUF 節點），支援預裝通義萬相 Wan 2.2、騰訊混元 HunyuanVideo 1.5、LTX-2.3 音畫同步模型。"
+en = "Deploy ComfyUI on a Colab GPU with built-in video workflow templates, ComfyUI-Manager, GGUF loader, and ready-to-run model packs for MiniMax H3, LTX-2.5, Wan 2.2, HunyuanVideo 1.5, and LTX-2.3 audio-video generation."
+zh-CN = "在 Colab GPU 上一键部署 ComfyUI 视频生成工作台（内置官方视频模板、Manager 与 GGUF 节点），支持预装 MiniMax H3、LTX-2.5、通义万相 Wan 2.2、腾讯混元 HunyuanVideo 1.5 等最新开源音画同步视频模型。"
+zh-TW = "在 Colab GPU 上一鍵部署 ComfyUI 影片生成工作台（內建官方影片範本、Manager 與 GGUF 節點），支援預裝 MiniMax H3、LTX-2.5、通義萬相 Wan 2.2、騰訊混元 HunyuanVideo 1.5 等最新開源音畫同步影片模型。"
 
 [provision]
 accelerator = "A100"
@@ -23,6 +23,10 @@ high_mem = false
 id = "preset"
 type = "select"
 options = [
+  "minimax-h3-ti2v",
+  "minimax-h3-r2v",
+  "ltx2.5-22b-int8",
+  "ltx2.5-22b-dfr",
   "wan2.2-ti2v-5b",
   "wan2.2-i2v-14b-fp8",
   "wan2.2-t2v-14b-fp8",
@@ -38,9 +42,9 @@ en = "Preloaded video model pack"
 zh-CN = "预装视频模型包"
 zh-TW = "預裝影片模型包"
 [inputs.help]
-en = "wan2.2-ti2v-5b (~17 GB, T2V+I2V, fits L4/T4/A100) is the fastest starter. 14B/22B packs (~20-51 GB) shine on A100 (or L4 with FP8). Re-run on the same session to add another pack."
-zh-CN = "wan2.2-ti2v-5b（约 17 GB，文/图生视频合一，L4/T4/A100 均可跑）最省算力；14B/22B 旗舰包建议选 A100（L4 也可跑 FP8）。想在同一台机器追加第二个模型包，可在下方「运行位置」选已有会话再次运行。"
-zh-TW = "wan2.2-ti2v-5b（約 17 GB，文/圖生影片合一，L4/T4/A100 皆可跑）最省算力；14B/22B 旗艦包建議選 A100（L4 也可跑 FP8）。想在同一台機器追加第二個模型包，可在下方「執行位置」選既有工作階段再次執行。"
+en = "Top open A/V flagships: minimax-h3-ti2v (~42 GB, open download, T2V+I2V+stereo audio, runs on L4/A100), minimax-h3-r2v (~42 GB, multi-ref), ltx2.5-22b-int8 (~46 GB, gated HF_TOKEN, multishot/4K), ltx2.5-22b-dfr (~62 GB, A100). Re-run on the same session to add another pack."
+zh-CN = "最新开源音画同步旗舰：minimax-h3-ti2v（约 42 GB，免 Token，文/图/首尾帧生立体声视频，L4/A100 均可跑）、minimax-h3-r2v（多参考图/视频/音频驱动）、ltx2.5-22b-int8（约 46 GB，需填免费 HF_TOKEN 并同意 Lightricks/LTX-2.5 协议，多镜头分镜+4K）、ltx2.5-22b-dfr（约 62 GB，推荐 A100）。可在「已有会话」上再次运行以增量追加模型包。"
+zh-TW = "最新開源音畫同步旗艦：minimax-h3-ti2v（約 42 GB，免 Token，文/圖/首尾幀生立體聲影片，L4/A100 皆可跑）、minimax-h3-r2v（多參考圖/影片/音訊驅動）、ltx2.5-22b-int8（約 46 GB，需填免費 HF_TOKEN 並同意 Lightricks/LTX-2.5 協議，多鏡頭分鏡+4K）、ltx2.5-22b-dfr（約 62 GB，建議 A100）。可在「既有工作階段」上再次執行以增量追加模型包。"
 
 [[inputs]]
 id = "extra_downloads"
