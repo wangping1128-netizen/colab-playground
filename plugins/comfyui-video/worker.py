@@ -6,7 +6,7 @@ inp=lambda k,d="":(E("PLUGIN_INPUT_"+k)or d).strip()
 RUN,C,LH,RQ=E("PLUGIN_RUN_DIR","/tmp/cpg"),"/content/ComfyUI","127.0.0.1","requirements.txt"
 MP,M,CN,SF,HB,TOK=f"{C}/main.py",f"{C}/models",f"{C}/custom_nodes",E("PLUGIN_STATUS_FILE",f"{RUN}/status.json"),E("PLUGIN_HEARTBEAT",""),E("PLUGIN_HF_TOKEN","")
 STG,STM,SL,IL="/content/.hf",f"{C}/.cpg_v1",f"{RUN}/server.log",f"{RUN}/install.log"
-PR,EX,EN,VM,XA=inp("PRESET","wan2.2-ti2v-5b"),inp("EXTRA_DOWNLOADS"),inp("EXTRA_NODES"),inp("VRAM_MODE","auto"),inp("EXTRA_ARGS")
+PR,P2,EX,EN,VM,XA=inp("PRESET","minimax-h3-ti2v"),inp("SECOND_PRESET","none"),inp("EXTRA_DOWNLOADS"),inp("EXTRA_NODES"),inp("VRAM_MODE","highvram"),inp("EXTRA_ARGS")
 IND,PORT,A=inp("INSTALL_NODES","1")in("1","true","yes"),int(float(inp("PORT","8188"))),r"[A-Za-z0-9_]"
 RG,SPL=A+r"[\w.-]*",lambda s:[x.strip()for x in re.split(r"[;\n]+",s or"")if x.strip()]
 D="diffusion_models unet checkpoints text_encoders clip clip_vision vae loras latent_upscale_models upscale_models audio_encoders controlnet".split()
@@ -43,9 +43,10 @@ def clean_env():
  if ld:e["LD_LIBRARY_PATH"]=":".join(ld)
  return dict(e,PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True",PYTHONUNBUFFERED="1",GIT_TERMINAL_PROMPT="0")
 choose_vram_flag=lambda m,v:""if m=="normalvram"else f"--{m}"if m in("highvram","lowvram")else"--highvram"if v>=70000 else""if v>=20000 else"--lowvram"if v>0 else"--cpu"
-def build_download_plan(pr,ex):
- if pr not in PRESETS:raise ValueError(f"unknown preset {pr!r}")
- tpl,it=PRESETS[pr][0],list(PRESETS[pr][1])
+def build_download_plan(pr,ex,p2="none"):
+ for k in(pr,p2):
+  if k not in PRESETS:raise ValueError(f"unknown preset {k!r}")
+ tpl,it=PRESETS[pr][0]+(f" + {PRESETS[p2][0]}"if p2 not in("none",pr)else""),list(PRESETS[pr][1])+list(PRESETS[p2][1])
  ok=lambda p:p and p[0]!="/"and not{"",".",".."}&set(p.split("/"))
  for e in SPL(ex):
   m=fm(f"({RG}/{RG}):([^\\\\]+)->([^\\\\]+)",e)
@@ -125,7 +126,7 @@ def main():
  md(RUN);sg.signal(sg.SIGTERM,lambda*_:(ksrv(),st("stopped",s="failed"),os._exit(143)));dn0=th.Event()
  bg(lambda:(hb(),[hb()for _ in iter(lambda:dn0.wait(25),True)]))
  if PORT==8080:fail("port 8080 reserved")
- try:pl,tpl=build_download_plan(PR,EX);en=parse_extra_nodes(EN)
+ try:pl,tpl=build_download_plan(PR,EX,P2);en=parse_extra_nodes(EN)
  except ValueError as e:fail(str(e))
  st("checking GPU",g="detect");gpu,mib=None,0
  try:
@@ -133,7 +134,7 @@ def main():
   if o:n,m=o.splitlines()[0].split(",",1);gpu,mib=n.strip(),int(float(m))
  except Exception:pass
  fgb,gn=lambda:round(du()/G,1),gpu or"CPU"
- if not gpu and PR!="none":fail("no GPU; select L4 or A100")
+ if not gpu and{PR,P2}!={"none"}:fail("no GPU; select L4 or A100")
  st(f"{gn} ({mib} MiB), {fgb():.1f}G free",1.)
  env=clean_env();install(env,en);rd=download(pl);sp.run(["pkill","-f",MP]);sl(2)
  try:socket.create_connection((LH,PORT),1).close();fail(f"port {PORT} busy")
@@ -152,7 +153,7 @@ def main():
  dv=ss.get("devices")or[]
  if gpu and(dv[0].get("type")if dv else"")!="cuda":fail(f"no CUDA: {tail()}")
  ver=ss.get("system",{}).get("comfyui_version","latest");dn0.set()
- st(f"ComfyUI {ver} ready ({gn}, {len(rd)} models) - '{tpl}'",1.,s="ready",o=dict(comfyui_version=ver,gpu=gn,vram_total_mib=mib,vram_mode=vf.lstrip("-")or"default",preset=PR,recommended_template=tpl,models_ready=len(rd),disk_free_gb=fgb(),output_dir=f"{C}/output"))
+ st(f"ComfyUI {ver} ready ({gn}, {len(rd)} models) - '{tpl}'",1.,s="ready",o=dict(comfyui_version=ver,gpu=gn,vram_total_mib=mib,vram_mode=vf.lstrip("-")or"default",preset=PR if P2 in("none",PR)else f"{PR}+{P2}",recommended_template=tpl,models_ready=len(rd),disk_free_gb=fgb(),output_dir=f"{C}/output"))
  while True:
   sl(20)
   if pr.poll()is not None:fail(f"ComfyUI exited: {tail()}")
@@ -162,7 +163,7 @@ def main():
   except Exception:pass
 if __name__=="__main__":
  if sys.argv[1:]==["--self-test"]:
-  assert all(build_download_plan(n,"")[1]for n in PRESETS)and clean_env()["GIT_TERMINAL_PROMPT"]=="0"and choose_vram_flag("auto",22500)==choose_vram_flag("normalvram",22500)==""and parse_extra_nodes("https://github.com/a/b.git@abc;c-d@1.0;a/b@abc")==[("git","a/b","abc"),("cnr","c-d@1.0","")]
+  assert all(build_download_plan(n,"")[1]for n in PRESETS)and len(build_download_plan("minimax-h3-ti2v","","minimax-h3-r2v")[0])==7 and clean_env()["GIT_TERMINAL_PROMPT"]=="0"and choose_vram_flag("auto",22500)==choose_vram_flag("normalvram",22500)==""and parse_extra_nodes("https://github.com/a/b.git@abc;c-d@1.0;a/b@abc")==[("git","a/b","abc"),("cnr","c-d@1.0","")]
   for bad in("../a/b","a/b@-x","a/b@","a/b/c","a/b;rm -rf /"):
    try:parse_extra_nodes(bad);raise AssertionError(bad)
    except ValueError:pass

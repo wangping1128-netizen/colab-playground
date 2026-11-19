@@ -1,6 +1,6 @@
 api = 1
 id = "comfyui-video"
-version = "0.1.5"
+version = "0.1.6"
 # Optional: passed as PLUGIN_HF_TOKEN when saved on the Plugins page (needed only for gated repos such as LTX-2.5).
 needs = ["hf_token"]
 
@@ -16,8 +16,8 @@ zh-TW = "在 Colab GPU 上一鍵部署 ComfyUI 影片生成工作台（內建官
 
 [provision]
 accelerator = "A100"
-min_vram_mib = 0
-high_mem = false
+min_vram_mib = 76800
+high_mem = true
 
 [[inputs]]
 id = "preset"
@@ -36,7 +36,7 @@ options = [
   "ltx2.3-22b-dev-fp8",
   "none",
 ]
-default = "wan2.2-ti2v-5b"
+default = "minimax-h3-ti2v"
 [inputs.label]
 en = "Preloaded video model pack"
 zh-CN = "预装视频模型包"
@@ -45,6 +45,33 @@ zh-TW = "預裝影片模型包"
 en = "Top open A/V flagships: minimax-h3-ti2v (~42 GB, open download, T2V+I2V+stereo audio, runs on L4/A100), minimax-h3-r2v (~42 GB, multi-ref), ltx2.5-22b-int8 (~46 GB, gated HF_TOKEN, multishot/4K), ltx2.5-22b-dfr (~62 GB, A100). Re-run on the same session to add another pack."
 zh-CN = "最新开源音画同步旗舰：minimax-h3-ti2v（约 42 GB，免 Token，文/图/首尾帧生立体声视频，L4/A100 均可跑）、minimax-h3-r2v（多参考图/视频/音频驱动）、ltx2.5-22b-int8（约 46 GB，需填免费 HF_TOKEN 并同意 Lightricks/LTX-2.5 协议，多镜头分镜+4K）、ltx2.5-22b-dfr（约 62 GB，推荐 A100）。可在「已有会话」上再次运行以增量追加模型包。"
 zh-TW = "最新開源音畫同步旗艦：minimax-h3-ti2v（約 42 GB，免 Token，文/圖/首尾幀生立體聲影片，L4/A100 皆可跑）、minimax-h3-r2v（多參考圖/影片/音訊驅動）、ltx2.5-22b-int8（約 46 GB，需填免費 HF_TOKEN 並同意 Lightricks/LTX-2.5 協議，多鏡頭分鏡+4K）、ltx2.5-22b-dfr（約 62 GB，建議 A100）。可在「既有工作階段」上再次執行以增量追加模型包。"
+
+[[inputs]]
+id = "second_preset"
+type = "select"
+options = [
+  "none",
+  "minimax-h3-r2v",
+  "wan2.2-i2v-14b-fp8",
+  "wan2.2-t2v-14b-fp8",
+  "ltx2.5-22b-dfr",
+  "ltx2.5-22b-int8",
+  "ltx2.3-22b-dev-fp8",
+  "ltx2.3-22b-distilled-fp8",
+  "hunyuan1.5-720p-t2v",
+  "hunyuan1.5-720p-i2v",
+  "wan2.2-ti2v-5b",
+  "minimax-h3-ti2v",
+]
+default = "minimax-h3-r2v"
+[inputs.label]
+en = "Second video model pack (optional)"
+zh-CN = "第二个预装视频模型包（可选）"
+zh-TW = "第二個預裝影片模型包（選填）"
+[inputs.help]
+en = "Auto-deduplicates shared weights. minimax-h3-r2v adds multi-reference A/V (+23 GB with minimax-h3-ti2v). Pick ltx2.5-22b-dfr if HF_TOKEN is configured, or none."
+zh-CN = "自动去重共享编码器与 VAE：搭配主包选 minimax-h3-r2v 仅多下 23 GB 即可集齐多主体参考生视频；若已填 HF_TOKEN 并同意协议，也可切为 ltx2.5-22b-dfr 满血双旗舰。"
+zh-TW = "自動去重共用編碼器與 VAE：搭配主包選 minimax-h3-r2v 僅多下 23 GB 即可集齊多主體參考生影片；若已填 HF_TOKEN 並同意協議，也可切為 ltx2.5-22b-dfr 滿血雙旗艦。"
 
 [[inputs]]
 id = "extra_downloads"
@@ -61,6 +88,7 @@ zh-TW = "按需追加任意 HF 權重（如 LTX-2.5、Wan-Animate、LoRA 或 GGU
 [[inputs]]
 id = "extra_nodes"
 type = "text"
+default = "kijai/ComfyUI-KJNodes; rgthree/rgthree-comfy; Lightricks/ComfyUI-LTXVideo"
 [inputs.label]
 en = "Extra custom nodes (optional)"
 zh-CN = "额外安装的第三方节点（可选）"
@@ -87,7 +115,7 @@ zh-TW = "安裝外掛管理器、GGUF 擴散模型載入節點與常用影片合
 id = "vram_mode"
 type = "select"
 options = ["auto", "highvram", "normalvram", "lowvram"]
-default = "auto"
+default = "highvram"
 [inputs.label]
 en = "VRAM management mode"
 zh-CN = "显存调度模式"
