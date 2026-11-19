@@ -38,7 +38,7 @@ fn comfyui_video_plugin_installs_and_resolves() {
         reloaded.load_errors
     );
     let loaded = reloaded.get("comfyui-video").unwrap();
-    assert_eq!(loaded.manifest.version, "0.1.2");
+    assert_eq!(loaded.manifest.version, "0.1.3");
     let launch_len = colab_playground_core::vm::plugin_launch_snippet(&loaded.script).len();
     assert!(
         launch_len < 16_000,

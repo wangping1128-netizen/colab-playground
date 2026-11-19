@@ -64,7 +64,7 @@ def clean_env():
  if ld: e["LD_LIBRARY_PATH"] = ":".join(ld)
  return dict(e, PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True", PYTHONUNBUFFERED="1", GIT_TERMINAL_PROMPT="0")
 
-choose_vram_flag = lambda m, v: f"--{m}" if m in ("highvram", "normalvram", "lowvram") else ("--highvram" if v >= 70000 else "--normalvram" if v >= 20000 else "--lowvram" if v > 0 else "--cpu")
+choose_vram_flag = lambda m, v: "" if m == "normalvram" else (f"--{m}" if m in ("highvram", "lowvram") else ("--highvram" if v >= 70000 else "" if v >= 20000 else "--lowvram" if v > 0 else "--cpu"))
 
 def build_download_plan(pr, ex):
  if pr not in PRESETS: raise ValueError(f"unknown preset {pr!r}")
@@ -152,7 +152,7 @@ def main():
  install(); rdy = download(plan); sp.run(["pkill", "-f", f"{C}/main.py"]); time.sleep(2)
  try: socket.create_connection(("127.0.0.1", PORT), 1).close(); fail(f"port {PORT} busy")
  except OSError: pass
- vf = choose_vram_flag(VMODE, mib); st(f"starting ComfyUI on {PORT} ({vf})", 0.3, "server")
+ vf = choose_vram_flag(VMODE, mib); st(f"starting ComfyUI on {PORT} ({vf or 'default'})", 0.3, "server")
  proc = _srv[0] = sp.Popen([sys.executable, *shlex.split(f"-u {C}/main.py --listen 127.0.0.1 --port {PORT} --enable-cors-header --preview-method auto {vf}"), *shlex.split(XARGS)], cwd=C, env=clean_env(), stdout=open(SLOG, "w"), stderr=sp.STDOUT, stdin=sp.DEVNULL, start_new_session=True)
  hj = lambda u: json.loads(ur.urlopen(f"http://127.0.0.1:{PORT}{u}", timeout=5).read().decode())
  stats, t0 = None, time.time()
@@ -166,7 +166,7 @@ def main():
  devs = stats.get("devices") or []
  if gpu and (devs[0].get("type") if devs else "") != "cuda": fail(f"no CUDA: {tail()}")
  ver = stats.get("system", {}).get("comfyui_version", "latest"); done.set()
- st(f"ComfyUI {ver} ready ({gpu or 'CPU'}, {len(rdy)} models) - '{tpl}'", 1.0, s="ready", o=dict(comfyui_version=ver, gpu=gpu or "CPU", vram_total_mib=mib, vram_mode=vf.lstrip("-"), preset=PRESET, recommended_template=tpl, models_ready=len(rdy), disk_free_gb=fgb(), output_dir=f"{C}/output"))
+ st(f"ComfyUI {ver} ready ({gpu or 'CPU'}, {len(rdy)} models) - '{tpl}'", 1.0, s="ready", o=dict(comfyui_version=ver, gpu=gpu or "CPU", vram_total_mib=mib, vram_mode=vf.lstrip("-") or "default", preset=PRESET, recommended_template=tpl, models_ready=len(rdy), disk_free_gb=fgb(), output_dir=f"{C}/output"))
  while True:
   time.sleep(20)
   if proc.poll() is not None: fail(f"ComfyUI exited: {tail()}")
@@ -177,7 +177,7 @@ def main():
 
 if __name__ == "__main__":
  if sys.argv[1:] == ["--self-test"]:
-  assert all(build_download_plan(n, "")[1] for n in PRESETS) and clean_env()["GIT_TERMINAL_PROMPT"] == "0"
+  assert all(build_download_plan(n, "")[1] for n in PRESETS) and clean_env()["GIT_TERMINAL_PROMPT"] == "0" and choose_vram_flag("auto", 22500) == "" and choose_vram_flag("normalvram", 22500) == ""
   print("self-test ok"); sys.exit(0)
  try: main()
  except SystemExit: raise

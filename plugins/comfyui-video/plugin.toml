@@ -1,6 +1,6 @@
 api = 1
 id = "comfyui-video"
-version = "0.1.2"
+version = "0.1.3"
 # Optional: passed as PLUGIN_HF_TOKEN when saved on the Plugins page (needed only for gated repos such as LTX-2.5).
 needs = ["hf_token"]
 
